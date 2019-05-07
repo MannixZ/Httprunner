@@ -1,0 +1,51 @@
+-   config:
+        name: testset description
+#        request:
+#          base_url: 'http://127.0.0.1:5000'
+#          headers:
+#            Content-Type: application/json
+        variables:
+          device_sn: ${gen_random_string(15)}
+        base_url: 'http://127.0.0.1:5000'
+        Content-Type: application/json
+
+- test:
+    name: /api/get-token
+    variables:
+      app_version: '121'
+      os_platform: asa
+    request:
+        method: POST
+        url: /api/get-token
+        headers:
+            app_version: $app_version
+            device_sn: $device_sn
+            os_platform: $os_platform
+        json:
+            sign: ${get_sign($device_sn, $os_platform, $app_version)}
+    extract:
+        - token: content.token
+    validate:
+        - eq: [status_code, 200]
+        - eq: [headers.Content-Type, application/json]
+        - eq: [content.success, true]
+
+
+-   test:
+        name: /api/users/user_id
+        variables:
+          user_id: ${gen_user_id()}
+        request:
+            method: POST
+            url: /api/users/$user_id
+            headers:
+                device_sn: $device_sn
+                token: $token
+            json:
+                name: ${gen_random_string(5)}
+                password: '123'
+        validate:
+            - eq: [status_code, 201]
+            - eq: [headers.Content-Type, application/json]
+            - eq: [content.success, true]
+            - eq: [content.msg, user created successfully.]
